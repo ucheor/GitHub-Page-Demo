@@ -65,4 +65,5 @@ If you want to use this demo as a template for your own site:
 
 ---
 
-**Built with ❤️ by [ucheor**](https://www.google.com/search?q=https://github.com/ucheor)
+**Built by [ucheor**](https://github.com/ucheor)
+
