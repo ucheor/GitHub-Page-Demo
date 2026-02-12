@@ -1,0 +1,647 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hiro-QA Infrastructure Monitor</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --bg-card: rgba(30, 41, 59, 0.6);
+            --border-color: #334155;
+            --text-primary: #e2e8f0;
+            --text-secondary: #94a3b8;
+            --text-tertiary: #64748b;
+            --header-border: #334155;
+        }
+
+        [data-theme="light"] {
+            --bg-primary: #f8fafc;
+            --bg-secondary: #e2e8f0;
+            --bg-card: rgba(255, 255, 255, 0.8);
+            --border-color: #cbd5e1;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
+            --text-tertiary: #64748b;
+            --header-border: #e2e8f0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            padding: 2rem;
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+            padding-bottom: 2rem;
+            border-bottom: 2px solid var(--header-border);
+            position: relative;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #059669);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.1rem;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            padding: 0.5rem;
+            display: flex;
+            gap: 0.5rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .theme-btn {
+            width: 40px;
+            height: 40px;
+            border: none;
+            border-radius: 50%;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            background: transparent;
+        }
+
+        .theme-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .theme-btn.active {
+            background: linear-gradient(135deg, #60a5fa, #059669);
+            box-shadow: 0 4px 12px rgba(96, 165, 250, 0.4);
+        }
+
+        .stats-overview {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .stat-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-value.online { color: #34d399; }
+        .stat-value.offline { color: #f87171; }
+        .stat-value.degraded { color: #fbbf24; }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 2rem;
+        }
+
+        .service-card {
+            background: var(--bg-card);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 2rem;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .service-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--accent-color), var(--accent-color-light));
+        }
+
+        .service-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--accent-color);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        [data-theme="light"] .service-card:hover {
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .service-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 1.5rem;
+        }
+
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .service-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: var(--accent-color);
+            box-shadow: 0 4px 12px var(--accent-shadow);
+        }
+
+        .service-title h3 {
+            font-size: 1.25rem;
+            margin-bottom: 0.25rem;
+        }
+
+        .service-type {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+        }
+
+        .status-badge {
+            padding: 0.4rem 0.9rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status-badge.online {
+            background: rgba(52, 211, 153, 0.2);
+            color: #34d399;
+            border: 1px solid #34d399;
+        }
+
+        .status-badge.offline {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+            border: 1px solid #f87171;
+        }
+
+        .status-badge.degraded {
+            background: rgba(251, 191, 36, 0.2);
+            color: #fbbf24;
+            border: 1px solid #fbbf24;
+        }
+
+        .service-details {
+            display: grid;
+            gap: 0.75rem;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 8px;
+        }
+
+        [data-theme="light"] .detail-row {
+            background: rgba(226, 232, 240, 0.5);
+        }
+
+        .detail-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .detail-value {
+            font-weight: 500;
+            font-family: 'Courier New', monospace;
+        }
+
+        .service-actions {
+            display: flex;
+            gap: 0.75rem;
+            margin-top: 1.5rem;
+        }
+
+        .service-actions .btn {
+            width: 100%;
+        }
+
+        .btn {
+            padding: 0.75rem;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9rem;
+        }
+
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background: rgba(148, 163, 184, 0.2);
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: rgba(148, 163, 184, 0.3);
+        }
+
+        [data-theme="light"] .btn-secondary {
+            background: rgba(226, 232, 240, 0.8);
+        }
+
+        [data-theme="light"] .btn-secondary:hover {
+            background: rgba(203, 213, 225, 1);
+        }
+
+        .uptime-bar {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .uptime-label {
+            color: var(--text-secondary);
+            font-size: 0.85rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .uptime-graph {
+            display: flex;
+            gap: 2px;
+            height: 30px;
+        }
+
+        .uptime-block {
+            flex: 1;
+            border-radius: 2px;
+            transition: all 0.2s;
+        }
+
+        .uptime-block:hover {
+            transform: scaleY(1.2);
+        }
+
+        .uptime-block.up {
+            background: #34d399;
+        }
+
+        .uptime-block.down {
+            background: #f87171;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .checking {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .refresh-timer {
+            text-align: center;
+            margin-top: 2rem;
+            color: var(--text-tertiary);
+            font-size: 0.9rem;
+        }
+
+        /* Service-specific colors */
+        .service-card.grafana {
+            --accent-color: #f46800;
+            --accent-color-light: #ff8c42;
+            --accent-shadow: rgba(244, 104, 0, 0.3);
+        }
+
+        .service-card.jenkins {
+            --accent-color: #d24939;
+            --accent-color-light: #e57373;
+            --accent-shadow: rgba(210, 73, 57, 0.3);
+        }
+
+        .service-card.sonarqube {
+            --accent-color: #4e9bcd;
+            --accent-color-light: #73b3dd;
+            --accent-shadow: rgba(78, 155, 205, 0.3);
+        }
+
+        .service-card.argocd {
+            --accent-color: #ef7b4d;
+            --accent-color-light: #f5a078;
+            --accent-shadow: rgba(239, 123, 77, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            h1 {
+                font-size: 2rem;
+            }
+
+            .services-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .theme-toggle {
+                position: static;
+                margin: 1rem auto 0;
+                width: fit-content;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="theme-toggle">
+                <button class="theme-btn active" id="lightBtn" onclick="setTheme('light')" title="Light Mode">☀️</button>
+                <button class="theme-btn" id="darkBtn" onclick="setTheme('dark')" title="Dark Mode">🌙</button>
+            </div>
+            <h1>Hiro-QA Infrastructure Monitor</h1>
+            <p class="subtitle">DevOps team infrastructure tracker</p>
+        </header>
+
+        <div class="stats-overview">
+            <div class="stat-card">
+                <div class="stat-value online" id="onlineCount">0</div>
+                <div class="stat-label">Online</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value degraded" id="degradedCount">0</div>
+                <div class="stat-label">Degraded</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value offline" id="offlineCount">0</div>
+                <div class="stat-label">Offline</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value" style="color: #60a5fa;" id="uptimeAvg">0%</div>
+                <div class="stat-label">Avg Uptime</div>
+            </div>
+        </div>
+
+        <div class="services-grid" id="servicesGrid"></div>
+
+        <div class="refresh-timer">
+            Next update in <span id="countdown">30</span> seconds
+        </div>
+    </div>
+
+    <script>
+        // Theme Management
+        function setTheme(theme) {
+            document.documentElement.setAttribute('data-theme', theme);
+            localStorage.setItem('theme', theme);
+            
+            const lightBtn = document.getElementById('lightBtn');
+            const darkBtn = document.getElementById('darkBtn');
+            
+            if (theme === 'light') {
+                lightBtn.classList.add('active');
+                darkBtn.classList.remove('active');
+            } else {
+                darkBtn.classList.add('active');
+                lightBtn.classList.remove('active');
+            }
+        }
+
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('theme') || 'light';
+            setTheme(savedTheme);
+        }
+
+        const services = [
+            {
+                id: 'grafana',
+                name: 'Grafana',
+                type: 'Monitoring & Analytics',
+                icon: '📊',
+                url: 'https://grafana.example.com',
+                port: '3000'
+            },
+            {
+                id: 'jenkins',
+                name: 'Jenkins',
+                type: 'CI/CD Pipeline',
+                icon: '⚙️',
+                url: 'https://jenkins.example.com',
+                port: '8080'
+            },
+            {
+                id: 'sonarqube',
+                name: 'SonarQube',
+                type: 'Code Quality',
+                icon: '🔍',
+                url: 'https://sonar.example.com',
+                port: '9000'
+            },
+            {
+                id: 'argocd',
+                name: 'ArgoCD',
+                type: 'GitOps Deployment',
+                icon: '🔄',
+                url: 'https://argocd.example.com',
+                port: '8080'
+            }
+        ];
+
+        let serviceStates = {};
+
+        function initializeServices() {
+            services.forEach(service => {
+                serviceStates[service.id] = {
+                    status: Math.random() > 0.15 ? 'online' : (Math.random() > 0.5 ? 'offline' : 'degraded'),
+                    responseTime: Math.floor(Math.random() * 500) + 50,
+                    uptime: (95 + Math.random() * 4.9).toFixed(2),
+                    lastChecked: new Date(),
+                    uptimeHistory: generateUptimeHistory()
+                };
+            });
+        }
+
+        function generateUptimeHistory() {
+            const history = [];
+            for (let i = 0; i < 30; i++) {
+                history.push(Math.random() > 0.05 ? 'up' : 'down');
+            }
+            return history;
+        }
+
+        function renderServices() {
+            const grid = document.getElementById('servicesGrid');
+            grid.innerHTML = services.map(service => {
+                const state = serviceStates[service.id];
+                return `
+                    <div class="service-card ${service.id}">
+                        <div class="service-header">
+                            <div class="service-info">
+                                <div class="service-icon">${service.icon}</div>
+                                <div class="service-title">
+                                    <h3>${service.name}</h3>
+                                    <div class="service-type">${service.type}</div>
+                                </div>
+                            </div>
+                            <div class="status-badge ${state.status}">${state.status}</div>
+                        </div>
+
+                        <div class="service-details">
+                            <div class="detail-row">
+                                <span class="detail-label">URL</span>
+                                <span class="detail-value">${service.url}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Port</span>
+                                <span class="detail-value">${service.port}</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Response Time</span>
+                                <span class="detail-value">${state.responseTime}ms</span>
+                            </div>
+                            <div class="detail-row">
+                                <span class="detail-label">Uptime (30d)</span>
+                                <span class="detail-value">${state.uptime}%</span>
+                            </div>
+                        </div>
+
+                        <div class="uptime-bar">
+                            <div class="uptime-label">Last 30 days</div>
+                            <div class="uptime-graph">
+                                ${state.uptimeHistory.map(status => 
+                                    `<div class="uptime-block ${status}" title="${status === 'up' ? 'Online' : 'Offline'}"></div>`
+                                ).join('')}
+                            </div>
+                        </div>
+
+                        <div class="service-actions">
+                            <button class="btn btn-primary" onclick="checkService('${service.id}')">
+                                Check Now
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+
+            updateStats();
+        }
+
+        function updateStats() {
+            const online = Object.values(serviceStates).filter(s => s.status === 'online').length;
+            const degraded = Object.values(serviceStates).filter(s => s.status === 'degraded').length;
+            const offline = Object.values(serviceStates).filter(s => s.status === 'offline').length;
+            const avgUptime = (Object.values(serviceStates).reduce((sum, s) => sum + parseFloat(s.uptime), 0) / services.length).toFixed(1);
+
+            document.getElementById('onlineCount').textContent = online;
+            document.getElementById('degradedCount').textContent = degraded;
+            document.getElementById('offlineCount').textContent = offline;
+            document.getElementById('uptimeAvg').textContent = avgUptime + '%';
+        }
+
+        function checkService(serviceId) {
+            const card = document.querySelector(`.service-card.${serviceId}`);
+            card.classList.add('checking');
+
+            setTimeout(() => {
+                // Simulate status check
+                const randomStatus = Math.random();
+                serviceStates[serviceId].status = randomStatus > 0.1 ? 'online' : (randomStatus > 0.05 ? 'degraded' : 'offline');
+                serviceStates[serviceId].responseTime = Math.floor(Math.random() * 500) + 50;
+                serviceStates[serviceId].lastChecked = new Date();
+                
+                card.classList.remove('checking');
+                renderServices();
+            }, 1000);
+        }
+
+        function autoRefresh() {
+            let countdown = 30;
+            const countdownEl = document.getElementById('countdown');
+
+            setInterval(() => {
+                countdown--;
+                countdownEl.textContent = countdown;
+
+                if (countdown <= 0) {
+                    countdown = 30;
+                    // Simulate status updates
+                    services.forEach(service => {
+                        if (Math.random() > 0.9) {
+                            const randomStatus = Math.random();
+                            serviceStates[service.id].status = randomStatus > 0.1 ? 'online' : (randomStatus > 0.05 ? 'degraded' : 'offline');
+                            serviceStates[service.id].responseTime = Math.floor(Math.random() * 500) + 50;
+                        }
+                    });
+                    renderServices();
+                }
+            }, 1000);
+        }
+
+        // Initialize
+        loadTheme();
+        initializeServices();
+        renderServices();
+        autoRefresh();
+    </script>
+</body>
+</html>
